@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Interfaces/OnlineSessionInterface.h"
+
 #include "Multiplayer_PluginCharacter.generated.h"
 
 UCLASS(config=Game)
@@ -68,14 +69,16 @@ public:
 
 protected:
 
+	//Call When Pressed 1 in BP
 	UFUNCTION(BlueprintCallable)
 	void CreateGameSession();
 
-	void OnCreateSessionComplete(FName SessionName, bool bWasSuccess);
+	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 
 
 private:
 
 	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
+	bool bCanAddDelegate = true;
 };
 

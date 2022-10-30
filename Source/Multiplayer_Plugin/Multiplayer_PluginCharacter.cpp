@@ -7,12 +7,17 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "OnlineSessionSettings.h"
 #include "OnlineSubsystem.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AMultiplayer_PluginCharacter
 
-AMultiplayer_PluginCharacter::AMultiplayer_PluginCharacter()
+AMultiplayer_PluginCharacter::AMultiplayer_PluginCharacter(): 
+CreateSessionCompleteDelegate
+(
+	FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete)	//Member Intializer list to create delegate object and bind to function
+)
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -58,7 +63,7 @@ AMultiplayer_PluginCharacter::AMultiplayer_PluginCharacter()
 			GEngine->AddOnScreenDebugMessage
 			(	-1,
 				20.0f,
-				FColor::Red,
+				FColor::Green,
 				FString::Printf(TEXT("OnlineSubsystem name is %s "), *OnlineSubsystem->GetSubsystemName().ToString())
 			);
 		}
@@ -96,8 +101,76 @@ void AMultiplayer_PluginCharacter::SetupPlayerInputComponent(class UInputCompone
 	PlayerInputComponent->BindTouch(IE_Released, this, &AMultiplayer_PluginCharacter::TouchStopped);
 }
 
-void AMultiplayer_PluginCharacter::OnCreateSessionComplete(FName SessionName, bool bWasSuccess)
+void AMultiplayer_PluginCharacter::CreateGameSession()
 {
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+	//Checking For Exisiting Ongoing Session to avoid creating multiple sessions
+	auto ExisitingSession = OnlineSessionInterface->GetNamedSession(NAME_GameSession);
+	if (ExisitingSession != nullptr)
+	{
+		OnlineSessionInterface->DestroySession(NAME_GameSession);
+	}
+
+	//Delegate shoudn't add it self again and again
+	if (bCanAddDelegate == true)
+	{
+		OnlineSessionInterface->AddOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegate);
+		bCanAddDelegate = false;
+	}
+	//Adding Delegate to delegate list of Online session Interface
+
+	//Creating Share Pointer of Session setting for Paramater in  Create session method
+	TSharedPtr<FOnlineSessionSettings> SessionSettings = MakeShareable(new FOnlineSessionSettings());
+	
+	//Setting for Session
+	SessionSettings->bIsLANMatch = false;
+	SessionSettings->NumPublicConnections = 4;
+	SessionSettings->bAllowJoinInProgress = true;
+	SessionSettings->bAllowJoinViaPresence = true;
+	SessionSettings->bShouldAdvertise = true;
+	SessionSettings->bUseLobbiesIfAvailable = true;
+	SessionSettings->bUsesPresence = true;
+
+	//Creating Pointer LocalPlayer to access Local Player id to pass as Paramater in  Create session method
+	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+	
+	//Creating Session
+	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
+}
+
+void AMultiplayer_PluginCharacter::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	if (bWasSuccessful == true)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage
+			(
+				-1,
+				15.0f,
+				FColor::Green,
+				FString::Printf(TEXT("%s Session Was Created"), *SessionName.ToString())
+			);
+		}
+	}
+
+	else
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage
+			(
+				-1,
+				15.0f,
+				FColor::Red,
+				FString(TEXT("Session Creation Failed"))
+			);
+		}
+	}
 
 }
 
