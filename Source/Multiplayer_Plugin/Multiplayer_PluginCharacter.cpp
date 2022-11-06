@@ -13,11 +13,20 @@
 //////////////////////////////////////////////////////////////////////////
 // AMultiplayer_PluginCharacter
 
-AMultiplayer_PluginCharacter::AMultiplayer_PluginCharacter(): 
-CreateSessionCompleteDelegate
-(
-	FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete)	//Member Intializer list to create delegate object and bind to function
-)
+AMultiplayer_PluginCharacter::AMultiplayer_PluginCharacter() :
+	//Member Intializer List
+
+	//CreateSession Delegate
+	//###ThisClass_is_typedef_for_current_class###
+	CreateSessionCompleteDelegate
+	(
+		FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete)	//Member Intializer list to create delegate object and bind to function
+	),
+	//Find Session Delegate
+	FindSessionsCompleteDelegate
+	(
+		FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionComplete)
+	)
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -142,6 +151,26 @@ void AMultiplayer_PluginCharacter::CreateGameSession()
 	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
 }
 
+
+void AMultiplayer_PluginCharacter::JoinGameSession()
+{
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+	//Delegate shoudn't add it self again and again
+	if (bCanAddDelegate == true)
+	{
+		OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegate);
+		bCanAddDelegate = false;
+	}
+	//Adding Delegate to delegate list of Online session Interface
+
+	TSharedPtr<FOnlineSessionSearch> SessionSearch = MakeShareable(new FOnlineSessionSearch());
+
+}
+
 void AMultiplayer_PluginCharacter::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	if (bWasSuccessful == true)
@@ -172,6 +201,10 @@ void AMultiplayer_PluginCharacter::OnCreateSessionComplete(FName SessionName, bo
 		}
 	}
 
+}
+
+void AMultiplayer_PluginCharacter::OnFindSessionComplete(bool bWasSuccessful)
+{
 }
 
 void AMultiplayer_PluginCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
