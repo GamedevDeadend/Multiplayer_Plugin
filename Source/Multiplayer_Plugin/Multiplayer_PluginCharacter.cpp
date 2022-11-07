@@ -16,8 +16,9 @@
 AMultiplayer_PluginCharacter::AMultiplayer_PluginCharacter() :
 	//Member Intializer List
 
-	//CreateSession Delegate
 	//###ThisClass_is_typedef_for_current_class###
+
+	//CreateSession Delegate
 	CreateSessionCompleteDelegate
 	(
 		FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete)	//Member Intializer list to create delegate object and bind to function
@@ -25,7 +26,12 @@ AMultiplayer_PluginCharacter::AMultiplayer_PluginCharacter() :
 	//Find Session Delegate
 	FindSessionsCompleteDelegate
 	(
-		FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionComplete)
+		FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionsComplete)
+	),
+	//Join Session Delegate
+	JoinSessionCompleteDelegate
+	(
+		FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete)
 	)
 {
 	// Set size for collision capsule
@@ -110,102 +116,6 @@ void AMultiplayer_PluginCharacter::SetupPlayerInputComponent(class UInputCompone
 	PlayerInputComponent->BindTouch(IE_Released, this, &AMultiplayer_PluginCharacter::TouchStopped);
 }
 
-void AMultiplayer_PluginCharacter::CreateGameSession()
-{
-	if (!OnlineSessionInterface.IsValid())
-	{
-		return;
-	}
-
-	//Checking For Exisiting Ongoing Session to avoid creating multiple sessions
-	auto ExisitingSession = OnlineSessionInterface->GetNamedSession(NAME_GameSession);
-	if (ExisitingSession != nullptr)
-	{
-		OnlineSessionInterface->DestroySession(NAME_GameSession);
-	}
-
-	//Delegate shoudn't add it self again and again
-	if (bCanAddDelegate == true)
-	{
-		OnlineSessionInterface->AddOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegate);
-		bCanAddDelegate = false;
-	}
-	//Adding Delegate to delegate list of Online session Interface
-
-	//Creating Share Pointer of Session setting for Paramater in  Create session method
-	TSharedPtr<FOnlineSessionSettings> SessionSettings = MakeShareable(new FOnlineSessionSettings());
-	
-	//Setting for Session
-	SessionSettings->bIsLANMatch = false;
-	SessionSettings->NumPublicConnections = 4;
-	SessionSettings->bAllowJoinInProgress = true;
-	SessionSettings->bAllowJoinViaPresence = true;
-	SessionSettings->bShouldAdvertise = true;
-	SessionSettings->bUseLobbiesIfAvailable = true;
-	SessionSettings->bUsesPresence = true;
-
-	//Creating Pointer LocalPlayer to access Local Player id to pass as Paramater in  Create session method
-	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
-	
-	//Creating Session
-	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
-}
-
-
-void AMultiplayer_PluginCharacter::JoinGameSession()
-{
-	if (!OnlineSessionInterface.IsValid())
-	{
-		return;
-	}
-
-	//Delegate shoudn't add it self again and again
-	if (bCanAddDelegate == true)
-	{
-		OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegate);
-		bCanAddDelegate = false;
-	}
-	//Adding Delegate to delegate list of Online session Interface
-
-	TSharedPtr<FOnlineSessionSearch> SessionSearch = MakeShareable(new FOnlineSessionSearch());
-
-}
-
-void AMultiplayer_PluginCharacter::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
-{
-	if (bWasSuccessful == true)
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage
-			(
-				-1,
-				15.0f,
-				FColor::Green,
-				FString::Printf(TEXT("%s Session Was Created"), *SessionName.ToString())
-			);
-		}
-	}
-
-	else
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage
-			(
-				-1,
-				15.0f,
-				FColor::Red,
-				FString(TEXT("Session Creation Failed"))
-			);
-		}
-	}
-
-}
-
-void AMultiplayer_PluginCharacter::OnFindSessionComplete(bool bWasSuccessful)
-{
-}
 
 void AMultiplayer_PluginCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
 {
@@ -256,4 +166,184 @@ void AMultiplayer_PluginCharacter::MoveRight(float Value)
 		// add movement in that direction
 		AddMovementInput(Direction, Value);
 	}
+}
+
+void AMultiplayer_PluginCharacter::CreateGameSession()
+{
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+	//Checking For Exisiting Ongoing Session to avoid creating multiple sessions
+	auto ExisitingSession = OnlineSessionInterface->GetNamedSession(NAME_GameSession);
+	if (ExisitingSession != nullptr)
+	{
+		OnlineSessionInterface->DestroySession(NAME_GameSession);
+	}
+
+	//Delegate shoudn't add it self again and again
+	if (bCanAddDelegate == true)
+	{
+		//Adding Delegate to delegate list of Online session Interface
+		OnlineSessionInterface->AddOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegate);
+		bCanAddDelegate = false;
+	}
+
+
+	//Creating Share Pointer of Session setting for Paramater in  Create session method
+	TSharedPtr<FOnlineSessionSettings> SessionSettings = MakeShareable(new FOnlineSessionSettings());
+	
+	//Setting for Session
+	SessionSettings->bIsLANMatch = false;
+	SessionSettings->NumPublicConnections = 4;
+	SessionSettings->bAllowJoinInProgress = true;
+	SessionSettings->bAllowJoinViaPresence = true;
+	SessionSettings->bShouldAdvertise = true;
+	//SessionSettings->bUseLobbiesIfAvailable = true;
+	SessionSettings->bUsesPresence = true;
+
+	//FName Behave as key while FString behave as value
+	SessionSettings->Set(FName("MatchType"), FString("FreeForAll"), EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+
+
+	//Creating Pointer LocalPlayer to access Local Player id to pass as Paramater in  Create session method
+	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+	
+	//Creating Session
+	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
+}
+
+void AMultiplayer_PluginCharacter::JoinGameSession()
+{
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+	//Delegate shoudn't add it self again and again
+	if (bCanAddDelegate2 == true)
+	{
+		OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegate);
+		bCanAddDelegate2 = false;
+	}
+
+	//Intializing FOnlineSessionSearch member Variable to pass in find session function;
+	SessionSearch = MakeShareable(new FOnlineSessionSearch());
+	SessionSearch->MaxSearchResults = 10000;
+	SessionSearch->bIsLanQuery = false;
+	SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
+
+	//Local Player To Get Net PLayer Id
+	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+	OnlineSessionInterface->FindSessions(*LocalPlayer->GetPreferredUniqueNetId(), SessionSearch.ToSharedRef());
+}
+
+void AMultiplayer_PluginCharacter::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	if (bWasSuccessful == true)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage
+			(
+				-1,
+				15.0f,
+				FColor::Green,
+				FString::Printf(TEXT("%s Session Was Created"), *SessionName.ToString())
+			);
+
+			UWorld *World = GetWorld();
+			if (World)
+			{
+				World->ServerTravel(FString("/Game/ThirdPerson/Maps/Lobby?listen"));// ?listen Opens Level as listen server
+			}
+		}
+	}
+
+	else
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage
+			(
+				-1,
+				15.0f,
+				FColor::Red,
+				FString(TEXT("Session Creation Failed"))
+			);
+		}
+	}
+
+}
+
+void AMultiplayer_PluginCharacter::OnFindSessionsComplete(bool bWasSuccessful)
+{
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+	for (auto result : SessionSearch->SearchResults)
+	{
+		FString Id = result.GetSessionIdStr();
+		FString User = result.Session.OwningUserName;
+		FString MatchType;
+		result.Session.SessionSettings.Get(FName("MatchType"), MatchType);
+
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage
+			(
+				-1,
+				15.0f,
+				FColor::Green,
+				FString::Printf(TEXT("User %s, Id %s"), *Id, *User)
+			);
+		}
+
+		if (MatchType == "FreeForAll")
+		{
+			GEngine->AddOnScreenDebugMessage
+			(
+				-1,
+				15.0f,
+				FColor::Green,
+				FString::Printf(TEXT("Joined %s Match"), *MatchType)
+			);
+		}
+
+
+		//Adding join delegate to interface delegate list
+		OnlineSessionInterface->AddOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegate);
+
+		//Local Player To Get Net PLayer Id
+		const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+
+		OnlineSessionInterface->JoinSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, result);
+	}
+}
+
+void AMultiplayer_PluginCharacter::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+{
+	if (! OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+	FString IPAddress;
+	if (OnlineSessionInterface->GetResolvedConnectString(NAME_GameSession, IPAddress))
+	{
+		GEngine->AddOnScreenDebugMessage
+		(
+			-1,
+			15.0f,
+			FColor::Green,
+			FString::Printf(TEXT("IP Address of session is %s"), *IPAddress)
+		);
+
+		APlayerController *PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
+		PlayerController->ClientTravel(IPAddress, ETravelType::TRAVEL_Absolute);
+	}
+
 }

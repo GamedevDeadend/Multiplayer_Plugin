@@ -64,9 +64,6 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
-
-	TSharedPtr<class IOnlineSession, ESPMode::ThreadSafe> OnlineSessionInterface;
-
 protected:
 
 	//Call When Pressed 1 in BP
@@ -77,13 +74,19 @@ protected:
 	void JoinGameSession();
 
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
-	void OnFindSessionComplete(bool bWasSuccessful);
+	void OnFindSessionsComplete(bool bWasSuccessful);
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 
 
 private:
 
-	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
-	FOnFindSessionsCompleteDelegate FindSessionsCompleteDelegate;
+	TSharedPtr<class IOnlineSession, ESPMode::ThreadSafe> OnlineSessionInterface;
+	TSharedPtr<FOnlineSessionSearch> SessionSearch;
+
+	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate; //Create Session Delegate
+	FOnFindSessionsCompleteDelegate FindSessionsCompleteDelegate;	// Find Session Delegate
+	FOnJoinSessionCompleteDelegate JoinSessionCompleteDelegate; //Join Session Delegate
 	bool bCanAddDelegate = true;
+	bool bCanAddDelegate2 = true;
 };
 
