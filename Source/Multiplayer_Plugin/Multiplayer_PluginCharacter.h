@@ -64,6 +64,10 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
+public:
+		//Pointer to online session interface
+		IOnlineSessionPtr OnlineSessionInterface;
+
 protected:
 
 	//Call When Pressed 1 in BP
@@ -80,13 +84,12 @@ protected:
 
 private:
 
-	TSharedPtr<class IOnlineSession, ESPMode::ThreadSafe> OnlineSessionInterface;
-	TSharedPtr<FOnlineSessionSearch> SessionSearch;
 
 	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate; //Create Session Delegate
 	FOnFindSessionsCompleteDelegate FindSessionsCompleteDelegate;	// Find Session Delegate
+	TSharedPtr<FOnlineSessionSearch> SessionSearch;
 	FOnJoinSessionCompleteDelegate JoinSessionCompleteDelegate; //Join Session Delegate
-	bool bCanAddDelegate = true;
-	bool bCanAddDelegate2 = true;
+	//bool bCanAddDelegate = true;
+	//bool bCanAddDelegate2 = true;
 };
 

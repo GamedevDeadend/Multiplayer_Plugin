@@ -183,12 +183,12 @@ void AMultiplayer_PluginCharacter::CreateGameSession()
 	}
 
 	//Delegate shoudn't add it self again and again
-	if (bCanAddDelegate == true)
-	{
+	//if (bCanAddDelegate == true)
+	//{
 		//Adding Delegate to delegate list of Online session Interface
 		OnlineSessionInterface->AddOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegate);
-		bCanAddDelegate = false;
-	}
+		//bCanAddDelegate = false;
+	//}
 
 
 	//Creating Share Pointer of Session setting for Paramater in  Create session method
@@ -200,7 +200,7 @@ void AMultiplayer_PluginCharacter::CreateGameSession()
 	SessionSettings->bAllowJoinInProgress = true;
 	SessionSettings->bAllowJoinViaPresence = true;
 	SessionSettings->bShouldAdvertise = true;
-	//SessionSettings->bUseLobbiesIfAvailable = true;
+	SessionSettings->bUseLobbiesIfAvailable = true;
 	SessionSettings->bUsesPresence = true;
 
 	//FName Behave as key while FString behave as value
@@ -216,17 +216,25 @@ void AMultiplayer_PluginCharacter::CreateGameSession()
 
 void AMultiplayer_PluginCharacter::JoinGameSession()
 {
+	GEngine->AddOnScreenDebugMessage
+	(
+		-1,
+		15.0f,
+		FColor::Green,
+		FString::Printf(TEXT("Join Session Was Function"))
+	);
+
 	if (!OnlineSessionInterface.IsValid())
 	{
 		return;
 	}
 
 	//Delegate shoudn't add it self again and again
-	if (bCanAddDelegate2 == true)
-	{
+	//if (bCanAddDelegate2 == true)
+	//{
 		OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegate);
-		bCanAddDelegate2 = false;
-	}
+		//bCanAddDelegate2 = false;
+	//}
 
 	//Intializing FOnlineSessionSearch member Variable to pass in find session function;
 	SessionSearch = MakeShareable(new FOnlineSessionSearch());
@@ -252,13 +260,14 @@ void AMultiplayer_PluginCharacter::OnCreateSessionComplete(FName SessionName, bo
 				FColor::Green,
 				FString::Printf(TEXT("%s Session Was Created"), *SessionName.ToString())
 			);
-
-			UWorld *World = GetWorld();
-			if (World)
-			{
-				World->ServerTravel(FString("/Game/ThirdPerson/Maps/Lobby?listen"));// ?listen Opens Level as listen server
-			}
 		}
+
+		UWorld *World = GetWorld();
+		if (World)
+		{
+			World->ServerTravel(FString("/Game/ThirdPerson/Maps/Lobby?listen"));// ?listen Opens Level as listen server
+		}
+		
 	}
 
 	else
@@ -279,17 +288,42 @@ void AMultiplayer_PluginCharacter::OnCreateSessionComplete(FName SessionName, bo
 
 void AMultiplayer_PluginCharacter::OnFindSessionsComplete(bool bWasSuccessful)
 {
+
+	GEngine->AddOnScreenDebugMessage
+	(
+		-1,
+		15.0f,
+		FColor::Green,
+		FString::Printf(TEXT("Find Session Delegate fired"))
+	);
+
 	if (!OnlineSessionInterface.IsValid())
 	{
 		return;
 	}
 
-	for (auto result : SessionSearch->SearchResults)
+	GEngine->AddOnScreenDebugMessage
+	(
+		-1,
+		15.0f,
+		FColor::Green,
+		FString::Printf(TEXT("Find Session Delegate2 fired"))
+	);
+
+	for (auto Result : SessionSearch->SearchResults)
 	{
-		FString Id = result.GetSessionIdStr();
-		FString User = result.Session.OwningUserName;
+		FString Id = Result.GetSessionIdStr();
+		FString User = Result.Session.OwningUserName;
 		FString MatchType;
-		result.Session.SessionSettings.Get(FName("MatchType"), MatchType);
+		Result.Session.SessionSettings.Get(FName("MatchType"), MatchType);
+
+		//GEngine->AddOnScreenDebugMessage
+		//(
+		//	-1,
+		//	15.0f,
+		//	FColor::Green,
+		//	FString::Printf(TEXT("Find Session for loop fired"))
+		//);
 
 		if (GEngine)
 		{
@@ -298,35 +332,43 @@ void AMultiplayer_PluginCharacter::OnFindSessionsComplete(bool bWasSuccessful)
 				-1,
 				15.0f,
 				FColor::Green,
-				FString::Printf(TEXT("User %s, Id %s"), *Id, *User)
+				FString::Printf(TEXT("User:%s, Id:%s"), *Id, *User)
 			);
 		}
 
-		if (MatchType == "FreeForAll")
+		if (MatchType == FString("FreeForAll"))
 		{
-			GEngine->AddOnScreenDebugMessage
-			(
-				-1,
-				15.0f,
-				FColor::Green,
-				FString::Printf(TEXT("Joined %s Match"), *MatchType)
-			);
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage
+				(
+					-1,
+					15.0f,
+					FColor::Green,
+					FString::Printf(TEXT("Joined %s Match"), *MatchType)
+				);
+			}
+			//Adding join delegate to interface delegate list
+			OnlineSessionInterface->AddOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegate);
+			
+			//Local Player To Get Net PLayer Id
+			const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+			OnlineSessionInterface->JoinSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, Result);
 		}
-
-
-		//Adding join delegate to interface delegate list
-		OnlineSessionInterface->AddOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegate);
-
-		//Local Player To Get Net PLayer Id
-		const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
-
-		OnlineSessionInterface->JoinSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, result);
 	}
 }
 
 void AMultiplayer_PluginCharacter::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-	if (! OnlineSessionInterface.IsValid())
+	GEngine->AddOnScreenDebugMessage
+	(
+		-1,
+		15.0f,
+		FColor::Green,
+		FString::Printf(TEXT("Join Session  Delegate Fired"))
+	);
+
+	if (!OnlineSessionInterface.IsValid())
 	{
 		return;
 	}
@@ -334,16 +376,22 @@ void AMultiplayer_PluginCharacter::OnJoinSessionComplete(FName SessionName, EOnJ
 	FString IPAddress;
 	if (OnlineSessionInterface->GetResolvedConnectString(NAME_GameSession, IPAddress))
 	{
-		GEngine->AddOnScreenDebugMessage
-		(
-			-1,
-			15.0f,
-			FColor::Green,
-			FString::Printf(TEXT("IP Address of session is %s"), *IPAddress)
-		);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage
+			(
+				-1,
+				15.0f,
+				FColor::Green,
+				FString::Printf(TEXT("IP Address of session is %s"), *IPAddress)
+			);
+		}
 
 		APlayerController *PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
-		PlayerController->ClientTravel(IPAddress, ETravelType::TRAVEL_Absolute);
+		if (PlayerController)
+		{
+			PlayerController->ClientTravel(IPAddress, ETravelType::TRAVEL_Absolute);
+		}
 	}
 
 }
