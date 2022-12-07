@@ -9,8 +9,15 @@
 #include "MultiplayerSessionsSubsystem.generated.h"
 
 /**
- * 
+ * Declaring Custom Dynamic multicast delegate
  */
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnCreateSessionDelegate, bool, bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FMultiplayerOnFindSessionDelegate,const TArray<FOnlineSessionSearchResult>& SessionResults, bool bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_OneParam(FMultiplayerOnJoinSessionDelegate, EOnJoinSessionCompleteResult::Type Result);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnStartSessionDelegate, bool, bWasSuccessful);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnDestroySessionDelegate, bool, bWasSuccessful);
+
 UCLASS()
 class MULTIPLAYER_API UMultiplayerSessionsSubsystem : public UGameInstanceSubsystem
 {
@@ -21,15 +28,24 @@ public:
 	UMultiplayerSessionsSubsystem();
 
 	//To Be Called With Menu class
-	void CreateSession(int32 NumPublicConnections, FString MatchType);
+	void CreateSession(int32 NumPublicConnections = 4, FString MatchType = "FreeForAll");
 	void FindSessions(int32 MaxSearchResults);
 	void JoinSessions(const FOnlineSessionSearchResult& SearchResult);
 	void DestroySessions();
 	void StartSession();
 
+
+	FMultiplayerOnCreateSessionDelegate MultiplayerOnCreateSessionDelegate;
+	FMultiplayerOnFindSessionDelegate MultiplayerOnFindSessionDelegate;
+	FMultiplayerOnJoinSessionDelegate MultiplayerOnJoinSessionDelegate;
+	FMultiplayerOnStartSessionDelegate MultiplayerOnStartSessionDelegate;
+	FMultiplayerOnDestroySessionDelegate MultiplayerOnDestroySessionDelegate;
+
 private:
 
 	IOnlineSessionPtr SessionInterface;
+	TSharedPtr<FOnlineSessionSettings> LastSessionSettings;
+	TSharedPtr<FOnlineSessionSearch> LastSessionSearch;
 
 	//Delegates
 	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
@@ -37,6 +53,15 @@ private:
 	FOnJoinSessionCompleteDelegate JoinSessionCompleteDelegate;
 	FOnDestroySessionCompleteDelegate DestroySessionCompleteDelegate;
 	FOnStartSessionCompleteDelegate StartSessionCompleteDelegate;
+
+	//Delegate Handles
+	FDelegateHandle CreateSessionCompleteDelegateHandle;
+	FDelegateHandle FindSessionsCompleteDelegateHandle;
+	FDelegateHandle JoinSessionCompleteDelegateHandle;
+	FDelegateHandle DestroySessionCompleteDelegateHandle;
+	FDelegateHandle StartSessionCompleteDelegateHandle;
+
+
 
 protected:
 

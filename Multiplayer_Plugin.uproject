@@ -1,13 +1,16 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "5.0",
+	"EngineAssociation": "{6749F018-4962-A861-A2E9-5B9EE20D7B2C}",
 	"Category": "",
 	"Description": "",
 	"Modules": [
 		{
 			"Name": "Multiplayer_Plugin",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
 		}
 	],
 	"Plugins": [
