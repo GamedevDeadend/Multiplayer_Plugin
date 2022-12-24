@@ -18,7 +18,7 @@ class MULTIPLAYER_API UMenuSystem : public UUserWidget
 public:
 
 	UFUNCTION(BlueprintCallable)
-		void MenuSetup(int32 INumConnections = 4, FString IMatchType = FString("FreeForAll"));
+		void MenuSetup(int32 INumConnections = 4, FString IMatchType = FString(TEXT("FreeForAll")), FString LobbyPath = FString(TEXT("/Game/ThirdPerson/Maps/Lobby")));
 
 protected:
 	virtual bool Initialize() override;
@@ -29,6 +29,7 @@ private:
 
 	int32 NumConnections;
 	FString MatchType;
+	FString PathToLobby;
 
 	UPROPERTY(meta = (BindWidget))
 		class UButton *Join;

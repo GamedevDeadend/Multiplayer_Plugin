@@ -36,8 +36,9 @@ void UMenuSystem::OnLevelRemovedFromWorld(ULevel* Inlevel, UWorld* InWorld)
     Super::OnLevelRemovedFromWorld(Inlevel, InWorld);
 }
 
-void UMenuSystem :: MenuSetup(int32 INumConnections, FString IMatchType)
+void UMenuSystem :: MenuSetup(int32 INumConnections, FString IMatchType, FString LobbyPath)
 {
+    PathToLobby = FString::Printf(TEXT("%s?listen"), *LobbyPath);
     NumConnections = INumConnections;
     MatchType = IMatchType;
     //Menu Widget Setup
@@ -78,6 +79,8 @@ void UMenuSystem :: MenuSetup(int32 INumConnections, FString IMatchType)
 
 void UMenuSystem::HostButtonClicked()
 {
+    Host->SetIsEnabled(false);
+
     if (GEngine)
     {
         GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString("HelloHostButtonClicked"));
@@ -91,6 +94,7 @@ void UMenuSystem::HostButtonClicked()
 
 void UMenuSystem::JoinButtonClicked()
 {
+    Join->SetIsEnabled(false);
     if (GEngine)
     {
         GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString("JoinButtonClicked"));
@@ -132,8 +136,18 @@ void UMenuSystem::OnCreateSession(bool bWasSuccessful)
         UWorld* World = GetWorld();
         if (World)
         {
-            World->ServerTravel(FString("/Game/ThirdPerson/Maps/Lobby?listen")); //?listen Opens Level as listen server
+            World->ServerTravel(FString(PathToLobby)); //?listen Opens Level as listen server
         }
+    }
+
+    else
+    {
+        if (GEngine)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString("Session Creation Failed"));
+        }
+
+        Host->SetIsEnabled(true);
     }
 }
 
@@ -171,11 +185,22 @@ void UMenuSystem::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
             }
         }
     }
+
+    if (Result != EOnJoinSessionCompleteResult::Success)
+    {
+        Join->SetIsEnabled(true);
+    }
 }
 
 void UMenuSystem::OnStartSession(bool bWasSuccessful)
 {
-
+    if (bWasSuccessful == true)
+    {
+        if (GEngine)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Yellow, FString("Session Has Started and Progression is True"));
+        }
+    }
 }
 
 void UMenuSystem::OnDestroySession(bool bWasSuccessful)
@@ -229,5 +254,10 @@ void UMenuSystem::OnFindSession(const TArray<FOnlineSessionSearchResult>& Sessio
 
             MultiplayerSessionsSubsystem->JoinSessions(Result);
         }
+    }
+
+    if (!bWasSuccessful || SessionResult.Num() == 0)
+    {
+        Join->SetIsEnabled(true);
     }
 }

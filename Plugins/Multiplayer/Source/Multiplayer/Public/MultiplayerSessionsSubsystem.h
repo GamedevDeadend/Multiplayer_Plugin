@@ -62,6 +62,11 @@ private:
 	FDelegateHandle StartSessionCompleteDelegateHandle;
 
 
+	bool bCreateSessionOnDestroy = false;
+	int32 LastNumPublicConnections;
+	FString LastMatchType;
+
+
 
 protected:
 
